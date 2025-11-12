@@ -1,0 +1,131 @@
+/*
+Инструкция:
+----------------------------------
+Все задания должны быть выполнены только теми средствами, которые были изучены на уроке. То есть без применения каких-либо функций, включая групповые и оконные. Структура и описание табличек см. на левой стороне окна. 
+
+В данном(правом) окне вы можете тестировать свои SQL-запросы, нажимая на кнопку Run слева вверху (после того, конечно, как написан SQL- код)
+
+Каждый SQL-запрос нужно записывать под текстом того задания, к которому он относится. 
+
+После того как вы выполните все задания нажмите кнопку Fork, скопируйте ссылку и вставьте ее в личном кабинете.
+----------------------------------
+*/
+
+/*
+Задачи:
+----------------------------------
+
+1.  Вывести имена сотрудников и их даты трудоустройства, удовлетворяющих условиям:
+  - зарплата более 100
+  - не уволенные (то есть в поле fired_dt не стоит никакой даты)
+  - работающие в департаменте, где число сотрудников более 150
+Результат отсортировать по дате приема сотрудника на работу
+*/
+
+select name, hired_dt
+from employees
+where salary > 100 and fired_dt is null and dep_id in (select id 
+                                                      from departments
+                                                      where n_employees > 150)
+order by hired_dt;
+
+/*
+2.   Вывести сотрудников, уволившихся с работы не ранее чем через год (365 дней) после основания департамента, в котором они работали
+*/
+
+select *
+from (select e.*
+      from employees e, departments d
+      where e.dep_id = d.id and e.fired_dt - d.est_dt >=365);
+
+/*
+3.  Посчитать отчет по всем не уволенным сотрудникам, в котором вывести:
+  - Наименование департамента
+  - Имя сотрудника
+  - Год приема на работу (Например 2023)
+  - Местоположение сотрудника на момент 2023-11-01
+Если сотрудник трудоустроен после 2023-11-01, то в отчете его не показывать
+*/
+
+select d.name as dep_name, p.name, extract(year from p.hired_dt) as hired_yead, p.location, d.name as dep_name
+from (select e.dep_id, e.name, e.hired_dt, h.location
+      from employees e, emp_loc_history h
+      where e.hired_dt <= '2023-11-01' and e.fired_dt is not null and e.id = h.emp_id and (('2023-11-01' between h.from_dt and h.to_dt) or (h.from_dt <= '2023-11-01' and h.to_dt is null))) as p, departments d
+where p.dep_id = d.id;
+
+/*
+4.  Вывести наименования департаментов, удовлетворяющих обоим условиям:
+  - в которых есть не уволенные сотрудники, устроившиеся на работу не ранее чем 2022-01-01 
+  - в которых были сотрудники (не важно уволенные или нет), размещенные в той же локации что и сам департамент на дату 2024-11-01
+*/
+
+select dep_name
+from (select *
+      from (select *, d.name as dep_name
+          from employees e 
+              left join departments d
+              on e.dep_id = d.id
+              left join emp_loc_history h
+              on e.id = h.emp_id)
+    where loc = location and (('2024-11-01' between from_dt and to_dt) or (from_dt <= '2024-11-01' and to_dt is null)))
+where fired_dt is null and hired_dt >= '2022-01-01';
+
+/*
+5.  Найти имена сотрудников и их руководителей (не важно уволенных или нет), чьи локации, на момент трудоустройства, совпадали
+*/
+
+select e.name, e1.name as manager_name
+from employees e
+     join employees e1
+     on e.manager_id = e1.id
+     join emp_loc_history h
+     on e.id = h.emp_id and e.hired_dt = h.from_dt
+     join emp_loc_history h1
+     on e1.id = h1.emp_id and e1.hired_dt = h1.from_dt
+where h.location = h1.location;
+
+/*
+6.  Найти имена сотрудников, у которых руководитель имеет руководителя, трудоустроенного в том же году и из того же департамента, что и сам сотрудник. Не важно уволены все эти сотрудники или нет.
+*/
+
+select e.name
+from employees e
+     join employees e1
+     on e.manager_id = e1.id
+     join employees e2
+     on e1.manager_id = e2.id
+where e.dep_id = e2.dep_id and extract(year from e.hired_dt) = extract(year from e2.hired_dt);
+
+/*
+7.  Вывести отчет по не уволенным сотрудникам, отображающий:
+   - Имя сотрудника
+   - Наименование департамента сотрудника
+   - Текущая локация сотрудника
+   - Количество отработанных дней с начала трудоустройства по текущую дату
+   - Имя руководителя сотрудника (если его нет или он уволен, то выводить «Отсутствует»)
+   - Департамент руководителя (если руководителя нет или он уволен, то выводить «-»)
+   - Текущая локация руководителя (если руководителя нет или он уволен, то выводить «-»)
+*/
+    
+select e.name as emp_name, d.name as emp_dep_name, h.location as emp_location, CURRENT_DATE - e.hired_dt as emp_days_worked,
+    case when e1.id is null or e1.fired_dt is not null then 'Отсутствует'
+         else e1.name
+    end as manager_name,
+    case when e1.id is null or e1.fired_dt is not null then '-'
+         else d1.name
+    end as manager_dep_name,
+    case when e1.id is null or e1.fired_dt is not null then '-'
+         else h1.location
+    end as manager_location
+from employees e
+    join departments d
+    on e.dep_id = d.id
+    join emp_loc_history h
+    on e.id = h.emp_id and h.to_dt is null
+    left join employees e1
+    on e.manager_id = e1.id
+    left join departments d1
+    on e1.dep_id = d1.id
+    left join emp_loc_history h1
+    on e1.id = h1.emp_id and h1.to_dt is null
+where e.fired_dt is null;
