@@ -51,5 +51,4 @@ class WikiSpider(scrapy.Spider):
             'Режиссер': ", ".join(get_clean_text('Режиссёр')),
             'Страна': ", ".join(get_clean_text('Страна')),
             'Год': year
-
         }
