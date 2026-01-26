@@ -11,7 +11,7 @@ import csv
 
 class ScrapingPipeline:
     def open_spider(self, spider):
-        self.file = open('movies2.csv', 'w', newline='', encoding='utf-8-sig')
+        self.file = open('movies.csv', 'w', newline='', encoding='utf-8-sig')
         fieldnames = ['Название', 'Жанр', 'Режиссер', 'Страна', 'Год']
         self.writer = csv.DictWriter(self.file, fieldnames=fieldnames, delimiter=';')
         self.writer.writeheader()
@@ -23,3 +23,4 @@ class ScrapingPipeline:
     def close_spider(self, spider):
 
         self.file.close()
+
