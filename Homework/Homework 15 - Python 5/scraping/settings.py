@@ -26,7 +26,6 @@ CONCURRENT_REQUESTS = 32
 CONCURRENT_REQUESTS_PER_DOMAIN = 32
 DOWNLOAD_DELAY = 0.05
 DUPEFILTER_CLASS = 'scrapy.dupefilters.BaseDupeFilter'
-SCHEDULER_ORDER = 'BFO'
 
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
@@ -87,3 +86,4 @@ AUTOTHROTTLE_ENABLED = True
 
 # Set settings whose default value is deprecated to a future-proof value
 FEED_EXPORT_ENCODING = "utf-8"
+
